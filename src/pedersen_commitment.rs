@@ -1,15 +1,12 @@
 use std::error::Error;
 
 use ark_bls12_381::{
-    Bls12_381, Config, Fq, Fr as F, G1Affine, G1Projective, G2Affine, G2Projective,
+    Bls12_381, Config, Fq, Fr as F, G1Affine
 };
 use ark_ec::{
-    bls12::{G1Prepared, G2Prepared},
-    pairing::Pairing,
-    short_weierstrass::Affine,
-    AffineRepr, CurveGroup, PrimeGroup,
+    AffineRepr, CurveGroup,
 };
-use ark_ff::{BigInteger256, Field, PrimeField, UniformRand, Zero};
+use ark_ff::{Field, PrimeField};
 use ark_poly::{
     polynomial,
     univariate::{DenseOrSparsePolynomial, DensePolynomial},
@@ -17,19 +14,16 @@ use ark_poly::{
 };
 use ark_std::{rand, One};
 use blake3::{self, Hash};
-use num_bigint::BigInt;
 
 pub fn pedersen_commitment(
     committing_vector: &Vec<F>,
     g_vec: &Vec<G1Affine>,
     blinding_factor: F,
 ) -> Result<G1Affine, Box<dyn Error>> {
-    if committing_vector.len() != (g_vec.len() + 1) {
+    if (committing_vector.len() + 1) != g_vec.len() {
         return Err("Invalid vector lengths".into());
     }
-
     let mut result: G1Affine = G1Affine::zero();
-
     for (index, point) in committing_vector.iter().enumerate() {
         result = (result.into_group() + g_vec[index] * point).into_affine();
     }
@@ -37,7 +31,7 @@ pub fn pedersen_commitment(
     Ok(result)
 }
 
-pub fn generate_random_point(seed: String) -> (G1Affine, Hash) {
+fn generate_random_point(seed: String) -> (G1Affine, Hash) {
     let hash = blake3::hash(seed.as_bytes());
     let next_hash = blake3::hash(hash.as_bytes());
     let mut x = Fq::from_le_bytes_mod_order(hash.as_bytes());
