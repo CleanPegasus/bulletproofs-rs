@@ -1,11 +1,7 @@
 use std::error::Error;
 
-use ark_bls12_381::{
-    Bls12_381, Config, Fq, Fr as F, G1Affine
-};
-use ark_ec::{
-    AffineRepr, CurveGroup,
-};
+use ark_bls12_381::{Bls12_381, Config, Fq, Fr as F, G1Affine};
+use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{Field, PrimeField};
 use ark_poly::{
     polynomial,

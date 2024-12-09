@@ -3,7 +3,6 @@ mod test {
     use ark_ff::UniformRand;
     use bulletproofs_rs::pedersen_commitment::{generate_n_random_points, pedersen_commitment};
 
-
     #[test]
     fn test_generate_n_points() {
         let points = generate_n_random_points("hello".to_string(), 10);
