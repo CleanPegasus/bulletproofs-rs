@@ -16,7 +16,7 @@ pub fn pedersen_commitment(
     g_vec: &Vec<G1Affine>,
     blinding_factor: F,
 ) -> Result<G1Affine, Box<dyn Error>> {
-    if (committing_vector.len() + 1) != g_vec.len() {
+    if (committing_vector.len() + 1) > g_vec.len() {
         return Err("Invalid vector lengths".into());
     }
     let mut result: G1Affine = G1Affine::zero();

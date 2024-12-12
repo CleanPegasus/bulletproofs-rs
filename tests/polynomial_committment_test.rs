@@ -1,6 +1,6 @@
 mod test {
     use ark_bls12_381::{Bls12_381, Fq, Fr as F};
-    use ark_ff::UniformRand;
+    use ark_ff::{Field, UniformRand};
     use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial, Polynomial};
     use bulletproofs_rs::{
         pedersen_commitment::generate_n_random_points,
@@ -70,5 +70,13 @@ mod test {
         let verification = verify(&committments, &g, &b, &u, &f_u, &proof);
 
         assert!(verification);
+    }
+
+    #[test]
+    fn test_ark_rng() {
+      let mut rng = ark_std::test_rng();
+      let u = F::rand(&mut rng);
+      let u_pow = u.pow(&[4]);
+      dbg!(u_pow);
     }
 }
