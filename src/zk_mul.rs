@@ -91,7 +91,7 @@ pub fn verify_proof(committments: &Vec<G1Affine>, g_vec: &Vec<G1Affine>, proofs:
 
 }
 
-fn generate_random_field_element() -> F {
+pub fn generate_random_field_element() -> F {
     let mut rng = rand::thread_rng();
     let num = rng.gen_range(1..100000);
     F::from(num)

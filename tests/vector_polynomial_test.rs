@@ -2,7 +2,7 @@
 mod test {
     use ark_bls12_381::Fr as F;
     use ark_ff::{AdditiveGroup, Field};
-    use bulletproofs_rs::vector_polynomial::{Coeff, VectorPolynomial};
+    use bulletproofs_rs::vector_polynomial::{Coeff, InnerProduct, VectorPolynomial};
 
     #[test]
     fn test_coeff_zero() {
@@ -24,8 +24,9 @@ mod test {
         let a = Coeff(vec![F::from(1u64), F::from(2u64), F::from(3u64)]);
         let b = Coeff(vec![F::from(4u64), F::from(5u64), F::from(6u64)]);
         let product = a.clone() * b;
-        // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
-        assert_eq!(product, F::from(32u64));
+        
+        let result = Coeff(vec![F::from(4u64), F::from(10u64), F::from(18u64)]);
+        assert_eq!(product, result);
     }
 
     #[test]
@@ -61,6 +62,16 @@ mod test {
         // First component: 1 + 3*2 = 7
         // Second component: 2 + 4*2 = 10
         assert_eq!(result.0, vec![F::from(7u64), F::from(10u64)]);
+    }
+
+    #[test]
+    fn test_coeff_inner_product() {
+        let coeff_a = Coeff(vec![F::from(2), F::from(4)]);
+        let coeff_b = Coeff(vec![F::from(3), F::from(6)]);
+
+        let c = coeff_a.inner_product(&coeff_b);
+        
+        assert!(c == F::from(30)); 
     }
 
     #[test]
