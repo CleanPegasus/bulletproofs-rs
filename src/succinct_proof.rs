@@ -3,8 +3,7 @@ use std::error::Error;
 use ark_bn254::{Fr as F, G1Affine};
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{AdditiveGroup, Field, PrimeField};
-use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial};
-use rand::Rng;
+
 
 pub fn commit(committing_vector: &Vec<F>, g_vec: &Vec<G1Affine>) -> Result<G1Affine, Box<dyn Error>> {
     if committing_vector.len() != g_vec.len() {

@@ -5,3 +5,4 @@ pub mod vector_polynomial;
 pub mod zk_ipa;
 pub mod succinct_proof;
 pub mod random_ec_points;
+pub mod log_proof_commitment;
