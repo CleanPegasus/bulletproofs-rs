@@ -27,6 +27,17 @@ pub fn pedersen_commitment(
     Ok(result)
 }
 
+pub fn commit(committing_vector: &Vec<F>, g_vec: &Vec<G1Affine>) -> Result<G1Affine, Box<dyn Error>> {
+    if committing_vector.len() != g_vec.len() {
+        return Err("Invalid vector lengths".into());
+    }
+    let mut result: G1Affine = G1Affine::zero();
+    for (index, point) in committing_vector.iter().enumerate() {
+        result = (result + g_vec[index] * point).into_affine();
+    }
+    Ok(result)
+}
+
 fn generate_random_point(seed: String) -> (G1Affine, Hash) {
     let hash = blake3::hash(seed.as_bytes());
     let next_hash = blake3::hash(hash.as_bytes());
