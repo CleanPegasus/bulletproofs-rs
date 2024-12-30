@@ -1,4 +1,7 @@
-use std::{fmt::Display, ops::{Add, Mul}};
+use std::{
+    fmt::Display,
+    ops::{Add, Mul},
+};
 
 use ark_bls12_381::{Fr as F, G1Affine};
 use ark_ec::{AffineRepr, CurveGroup};
@@ -37,11 +40,12 @@ impl Coeff {
 
     pub fn commit(&self, g_vec: &Vec<G1Affine>) -> G1Affine {
         assert!(self.len() == g_vec.len());
-        self.0.iter()
+        self.0
+            .iter()
             .zip(g_vec.iter())
-            .fold(G1Affine::zero(), |acc, (a, g)| 
+            .fold(G1Affine::zero(), |acc, (a, g)| {
                 (acc + (*g * a).into_affine()).into_affine()
-            )
+            })
     }
 
     pub fn len(&self) -> usize {
@@ -82,34 +86,27 @@ impl std::ops::IndexMut<usize> for Coeff {
 
 impl Add for Coeff {
     type Output = Coeff;
-    
+
     fn add(self, rhs: Self) -> Self::Output {
         assert!(self.0.len() == rhs.0.len());
-        let coeff = self.0.into_iter()
-            .zip(rhs.0)
-            .map(|(a, b)| a + b)
-            .collect();
+        let coeff = self.0.into_iter().zip(rhs.0).map(|(a, b)| a + b).collect();
         Coeff(coeff)
     }
 }
 
 impl Mul for Coeff {
     type Output = Coeff;
-    
+
     fn mul(self, rhs: Self) -> Self::Output {
         assert!(self.0.len() == rhs.0.len());
-        let result = self.0.into_iter()
-            .zip(rhs.0)
-            .map(|(a, b)| a * b)
-            .collect();
+        let result = self.0.into_iter().zip(rhs.0).map(|(a, b)| a * b).collect();
         Coeff(result)
     }
 }
 
 impl PartialEq for Coeff {
     fn eq(&self, other: &Self) -> bool {
-        self.0.len() == other.0.len() 
-            && self.0.iter().zip(other.0.iter()).all(|(a, b)| a == b)
+        self.0.len() == other.0.len() && self.0.iter().zip(other.0.iter()).all(|(a, b)| a == b)
     }
 }
 
@@ -120,10 +117,11 @@ pub trait InnerProduct {
 
 impl InnerProduct for Coeff {
     type Output = F;
-    
+
     fn inner_product(&self, rhs: &Self) -> Self::Output {
         assert!(self.0.len() == rhs.0.len());
-        self.clone().0
+        self.clone()
+            .0
             .into_iter()
             .zip(rhs.0.clone())
             .fold(F::ZERO, |acc, (a, b)| acc + a * b)
@@ -149,7 +147,9 @@ impl VectorPolynomial {
     pub fn evaluate(&self, x: &F) -> Coeff {
         let mut result = Coeff::zero(self.coeffs[0].len());
         for (index, coeff) in self.coeffs.iter().enumerate() {
-            let term: Vec<F> = coeff.0.iter()
+            let term: Vec<F> = coeff
+                .0
+                .iter()
                 .map(|&val| val * x.pow(&[index as u64]))
                 .collect();
             result = result + Coeff(term);

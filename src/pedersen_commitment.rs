@@ -27,7 +27,10 @@ pub fn pedersen_commitment(
     Ok(result)
 }
 
-pub fn commit(committing_vector: &Vec<F>, g_vec: &Vec<G1Affine>) -> Result<G1Affine, Box<dyn Error>> {
+pub fn commit(
+    committing_vector: &Vec<F>,
+    g_vec: &Vec<G1Affine>,
+) -> Result<G1Affine, Box<dyn Error>> {
     if committing_vector.len() != g_vec.len() {
         return Err("Invalid vector lengths".into());
     }

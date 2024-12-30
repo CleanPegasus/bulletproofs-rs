@@ -1,8 +1,9 @@
+pub mod log_ipa_proof;
+pub mod log_proof_commitment;
 pub mod pedersen_commitment;
 pub mod polynomial_commitment;
-pub mod zk_mul;
+pub mod random_ec_points;
+pub mod succinct_proof;
 pub mod vector_polynomial;
 pub mod zk_ipa;
-pub mod succinct_proof;
-pub mod random_ec_points;
-pub mod log_proof_commitment;
+pub mod zk_mul;

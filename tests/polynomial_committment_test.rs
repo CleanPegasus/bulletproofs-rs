@@ -74,9 +74,9 @@ mod test {
 
     #[test]
     fn test_ark_rng() {
-      let mut rng = ark_std::test_rng();
-      let u = F::rand(&mut rng);
-      let u_pow = u.pow(&[4]);
-      dbg!(u_pow);
+        let mut rng = ark_std::test_rng();
+        let u = F::rand(&mut rng);
+        let u_pow = u.pow(&[4]);
+        dbg!(u_pow);
     }
 }

@@ -24,7 +24,6 @@ pub fn verify_log_proof_of_committment(
     let mut g = g_vec.clone();
 
     while a.len() > 0 {
-        let mut a_commitment: G1Affine = G1Affine::zero();
         let mut a_vec: Vec<F> = vec![F::ZERO];
         let mut g_vec_last: Vec<G1Affine> = vec![G1Affine::zero()];
 
@@ -42,7 +41,6 @@ pub fn verify_log_proof_of_committment(
 
             g = fold_group(&mut g, &u.inverse().unwrap());
 
-            a_commitment = _a.clone();
             a_vec = a.clone();
             g_vec_last = g.clone();
         } else {

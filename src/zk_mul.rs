@@ -68,27 +68,31 @@ pub fn generate_proof(blinding_factors: &Vec<F>, u: &F) -> (F, F) {
     (pi_lr, pi_t)
 }
 
+pub fn verify_proof(
+    committments: &Vec<G1Affine>,
+    g_vec: &Vec<G1Affine>,
+    proofs: &(F, F),
+    u: &F,
+    poly_evaluation: &(F, F, F),
+) -> bool {
+    let [_a, _s, _t_0, _t_1, _t_2] = committments.as_slice() else {
+        panic!("Expected exactly 5 blinding factors");
+    };
 
-pub fn verify_proof(committments: &Vec<G1Affine>, g_vec: &Vec<G1Affine>, proofs: &(F, F), u: &F, poly_evaluation: &(F, F, F)) -> bool {
-  let [_a, _s, _t_0, _t_1, _t_2] = committments.as_slice() else {
-    panic!("Expected exactly 5 blinding factors");
-  };
+    let (pi_lr, pi_t) = proofs;
 
-  let (pi_lr, pi_t) = proofs;
+    let (l_u, r_u, t_u) = poly_evaluation;
 
-  let (l_u, r_u, t_u) = poly_evaluation;
+    let lhs_1 = (*_a + *_s * u).into_affine();
+    let rhs_1 = pedersen_commitment(&[*l_u, *r_u].to_vec(), g_vec, *pi_lr).unwrap();
 
-  let lhs_1 = (*_a + *_s * u).into_affine();
-  let rhs_1 = pedersen_commitment(&[*l_u, *r_u].to_vec(), g_vec, *pi_lr).unwrap();
+    let lhs_2 = pedersen_commitment(&[*t_u].to_vec(), g_vec, *pi_t).unwrap();
+    let rhs_2 = (*_t_0 + *_t_1 * u + *_t_2 * u * u).into_affine();
 
-  let lhs_2 = pedersen_commitment(&[*t_u].to_vec(), g_vec, *pi_t).unwrap();
-  let rhs_2 = (*_t_0 + *_t_1 * u + *_t_2 * u * u).into_affine();
+    let lhs_3 = *t_u;
+    let rhs_3 = l_u * r_u;
 
-  let lhs_3 = *t_u;
-  let rhs_3 = l_u * r_u;
-
-  (lhs_1 == rhs_1) && (lhs_2 == rhs_2) && (lhs_3 == rhs_3)
-
+    (lhs_1 == rhs_1) && (lhs_2 == rhs_2) && (lhs_3 == rhs_3)
 }
 
 pub fn generate_random_field_element() -> F {

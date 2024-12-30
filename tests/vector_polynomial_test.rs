@@ -24,7 +24,7 @@ mod test {
         let a = Coeff(vec![F::from(1u64), F::from(2u64), F::from(3u64)]);
         let b = Coeff(vec![F::from(4u64), F::from(5u64), F::from(6u64)]);
         let product = a.clone() * b;
-        
+
         let result = Coeff(vec![F::from(4u64), F::from(10u64), F::from(18u64)]);
         assert_eq!(product, result);
     }
@@ -73,8 +73,8 @@ mod test {
         let coeff_b = Coeff(vec![F::from(3), F::from(6)]);
 
         let c = coeff_a.inner_product(&coeff_b);
-        
-        assert!(c == F::from(30)); 
+
+        assert!(c == F::from(30));
     }
 
     #[test]
@@ -93,6 +93,4 @@ mod test {
         let coeff = Coeff::random(10);
         dbg!(coeff);
     }
-
-
 }

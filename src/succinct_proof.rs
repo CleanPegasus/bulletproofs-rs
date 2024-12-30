@@ -4,8 +4,10 @@ use ark_bn254::{Fr as F, G1Affine};
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{AdditiveGroup, Field, PrimeField};
 
-
-pub fn commit(committing_vector: &Vec<F>, g_vec: &Vec<G1Affine>) -> Result<G1Affine, Box<dyn Error>> {
+pub fn commit(
+    committing_vector: &Vec<F>,
+    g_vec: &Vec<G1Affine>,
+) -> Result<G1Affine, Box<dyn Error>> {
     if committing_vector.len() != g_vec.len() {
         return Err("Invalid vector lengths".into());
     }
@@ -17,7 +19,6 @@ pub fn commit(committing_vector: &Vec<F>, g_vec: &Vec<G1Affine>) -> Result<G1Aff
 }
 
 pub fn commit_vector(a: &mut Vec<F>, g_vec: &mut Vec<G1Affine>) -> (G1Affine, G1Affine, G1Affine) {
-
     let _a = commit(a, g_vec).unwrap();
 
     let (_l, _r) = compute_secondary_diagonal(g_vec, a);
@@ -77,7 +78,10 @@ pub fn split_vector<T: Clone + Default>(a: &mut Vec<T>) -> (Vec<T>, Vec<T>) {
     (l, r)
 }
 
-pub fn compute_secondary_diagonal(g_vec: &mut Vec<G1Affine>, a: &mut Vec<F>) -> (G1Affine, G1Affine) {
+pub fn compute_secondary_diagonal(
+    g_vec: &mut Vec<G1Affine>,
+    a: &mut Vec<F>,
+) -> (G1Affine, G1Affine) {
     if a.len() % 2 != 0 {
         a.push(F::ZERO);
         g_vec.push(G1Affine::zero());
@@ -88,7 +92,6 @@ pub fn compute_secondary_diagonal(g_vec: &mut Vec<G1Affine>, a: &mut Vec<F>) -> 
 
     let g1_vec: Vec<G1Affine> = g_vec.chunks(2).map(|chunk| chunk[0].clone()).collect();
     let g2_vec: Vec<G1Affine> = g_vec.chunks(2).map(|chunk| chunk[1].clone()).collect();
-
 
     (commit(&l, &g2_vec).unwrap(), commit(&r, &g1_vec).unwrap())
 }
