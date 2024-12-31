@@ -19,10 +19,14 @@ pub fn pedersen_commitment(
     if (committing_vector.len() + 1) > g_vec.len() {
         return Err("Invalid vector lengths".into());
     }
+    // Pedersen commitment: C = ∑(v_i * G_i) + r * H
+    // where v_i are the values, G_i are the generators, r is the blinding factor, and H is the last generator
     let mut result: G1Affine = G1Affine::zero();
     for (index, point) in committing_vector.iter().enumerate() {
+        // Accumulate v_i * G_i terms
         result = (result.into_group() + g_vec[index] * point).into_affine();
     }
+    // Add blinding factor term: r * H
     result = (result.into_group() + *g_vec.last().unwrap() * blinding_factor).into();
     Ok(result)
 }
@@ -34,8 +38,10 @@ pub fn commit(
     if committing_vector.len() != g_vec.len() {
         return Err("Invalid vector lengths".into());
     }
+    // Simple commitment without blinding: C = ∑(v_i * G_i)
     let mut result: G1Affine = G1Affine::zero();
     for (index, point) in committing_vector.iter().enumerate() {
+        // Accumulate v_i * G_i terms
         result = (result + g_vec[index] * point).into_affine();
     }
     Ok(result)
@@ -71,7 +77,7 @@ pub fn generate_n_random_points(seed: String, num_point: i32) -> Vec<G1Affine> {
 }
 
 fn find_y_for_x(x: Fq) -> Option<Fq> {
-    // y^2 = x^3 + 4
+    // BLS12-381 curve equation: y² = x³ + 4
     let x_cubed = x * x * x;
     let rhs = x_cubed + Fq::from(4);
     rhs.sqrt()

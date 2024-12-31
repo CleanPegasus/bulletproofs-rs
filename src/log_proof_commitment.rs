@@ -34,6 +34,8 @@ pub fn verify_log_proof_of_committment(
 
             a = fold_field(&mut a.clone(), &u);
 
+            dbg!(verify_succinct_proof(&(_a, _l, _r), &a, &u, &mut g));
+            
             if !verify_succinct_proof(&(_a, _l, _r), &a, &u, &mut g) {
                 println!("Verification Failed");
                 break;

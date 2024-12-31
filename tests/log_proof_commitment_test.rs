@@ -12,5 +12,5 @@ fn test_log_proof_verification() {
 
     let verification = verify_log_proof_of_committment(&mut commiting_vector, &mut g_vec);
 
-    dbg!(verification);
+    assert!(verification);
 }

@@ -23,6 +23,9 @@ pub fn commit_polynomial(
     let mut results = Vec::<G1Affine>::new();
     for (index, coeff) in coeffs.into_iter().enumerate() {
         dbg!((index, &coeff));
+        // For each coefficient c_i and random value γ_i:
+        // Compute commitment_i = c_i * G + γ_i * B
+        // This creates a Pedersen commitment for each coefficient
         let committment = *g * coeff + *b * gammas[index];
         results.push(committment.into_affine());
     }
@@ -31,6 +34,8 @@ pub fn commit_polynomial(
 
 pub fn generate_proof(gammas: &Vec<F>, u: &F) -> F {
     let mut proof = F::ZERO;
+    // Compute π = Σ(γ_i * u^i) for i from 0 to n-1
+    // This aggregates the random values (gammas) with powers of the evaluation point
     gammas
         .iter()
         .enumerate()
@@ -48,6 +53,8 @@ pub fn verify(
     proof: &F,
 ) -> bool {
     let mut lhs = G1Affine::zero();
+    // Left-hand side: Σ(C_i * u^i) for i from 0 to n-1
+    // Where C_i are the commitments and u is the evaluation point
     commitments
         .iter()
         .enumerate()
@@ -56,7 +63,10 @@ pub fn verify(
             lhs = (lhs + (*commitment * u_i).into_affine()).into();
         });
 
+    // Right-hand side: f(u) * G + π * B
+    // Where f(u) is the polynomial evaluated at u, and π is the proof
     let rhs = ((*g * f_u) + (*b * proof)).into_affine();
 
+    // Verification succeeds if LHS = RHS
     lhs == rhs
 }
