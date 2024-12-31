@@ -148,5 +148,5 @@ fn test_log_ipa() {
 
     let verification = log_ipa(&mut a, &mut b, &mut g_vec, &mut h_vec, &q);
 
-    dbg!(verification);
+    assert!(verification)
 }
