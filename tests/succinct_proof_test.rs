@@ -7,12 +7,10 @@ mod test {
     use bulletproofs_rs::random_ec_points::{
         generate_n_random_points, generate_random_field_element,
     };
+    use bulletproofs_rs::succinct_proof::compute_secondary_diagonal;
     use bulletproofs_rs::{
-        pedersen_commitment::commit,
-        succinct_proof::{commit_vector, fold_field, fold_group, verify_succinct_proof},
-        vector_polynomial::{Coeff, VectorPolynomial},
-        zk_ipa::{committment_vector_polynomials, verify_ipa},
-        zk_mul::{commit_polynomials, generate_proof, verify_proof},
+        pedersen_commitment,
+        succinct_proof::{commit_vector, fold_field, fold_group, verify_succinct_proof, commit},
     };
     use rand::Rng;
 
@@ -98,6 +96,48 @@ mod test {
         let a_prime = a[0] * u + a[1] * u.inverse().unwrap();
 
         assert!(proof[0] == a_prime)
+    }
+
+    #[test]
+    fn test_compute_secondary_diagonal() {
+        // Initialize random number generator
+        let mut rng = thread_rng();
+
+        // Create test vectors of size 4
+        let mut g_vec = vec![
+            G1Affine::rand(&mut rng),
+            G1Affine::rand(&mut rng),
+            G1Affine::rand(&mut rng),
+            G1Affine::rand(&mut rng),
+        ];
+        let mut a = vec![
+            F::rand(&mut rng),
+            F::rand(&mut rng),
+            F::rand(&mut rng),
+            F::rand(&mut rng),
+        ];
+
+        // Store original vectors for verification
+        let g_vec_original = g_vec.clone();
+        let a_original = a.clone();
+
+        // Compute L and R
+        let (l_commit, r_commit) = compute_secondary_diagonal(&mut g_vec, &mut a);
+
+        // Verify that L is computed correctly using even indices of a with odd indices of g
+        let expected_l = commit(
+            &vec![a_original[0], a_original[2]], 
+            &vec![g_vec_original[1], g_vec_original[3]]
+        ).unwrap();
+
+        // Verify that R is computed correctly using odd indices of a with even indices of g
+        let expected_r = commit(
+            &vec![a_original[1], a_original[3]], 
+            &vec![g_vec_original[0], g_vec_original[2]]
+        ).unwrap();
+
+        assert_eq!(l_commit, expected_l, "L commitment does not match expected value");
+        assert_eq!(r_commit, expected_r, "R commitment does not match expected value");
     }
 
     #[test]

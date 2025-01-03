@@ -107,9 +107,6 @@ pub fn compute_secondary_diagonal(
         g_vec.push(G1Affine::zero());
     }
 
-    dbg!("compute secondary diagonal");
-    dbg!(&a.len());
-    dbg!(&g_vec.len());
     // Split a into l and r
     let l: Vec<F> = a.chunks(2).map(|chunk| chunk[0].clone()).collect();
     let r: Vec<F> = a.chunks(2).map(|chunk| chunk[1].clone()).collect();
