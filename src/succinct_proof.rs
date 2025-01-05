@@ -58,9 +58,9 @@ pub fn verify_succinct_proof(
 
 /// Folds the field vector a into a new vector a_prime where each element a'_i is a_2i multiplied by u plus a_2i+1 multiplied by u inverse
 pub fn fold_field(a: &mut Vec<F>, u: &F) -> Vec<F> {
-    if a.len() % 2 != 0 {
-        a.push(F::ZERO);
-    }
+    // if a.len() % 2 != 0 {
+    //     a.push(F::ZERO);
+    // }
 
     let mut result = Vec::<F>::new();
     for chunk in a.chunks(2) {
@@ -73,9 +73,9 @@ pub fn fold_field(a: &mut Vec<F>, u: &F) -> Vec<F> {
 
 /// Folds the group vector G into a new vector G_prime where each element G'_i is G_2i multiplied by u plus G_2i+1 multiplied by u inverse
 pub fn fold_group(a: &mut Vec<G1Affine>, u: &F) -> Vec<G1Affine> {
-    if a.len() % 2 != 0 {
-        a.push(G1Affine::zero());
-    }
+    // if a.len() % 2 != 0 {
+    //     a.push(G1Affine::zero());
+    // }
     a.chunks(2)
         .map(|chunk| {
             // G_prime = G_0 * u + G_1 * u_inverse

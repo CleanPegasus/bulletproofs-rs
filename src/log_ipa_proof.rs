@@ -1,152 +1,134 @@
-use crate::random_ec_points::{generate_n_random_points, generate_random_field_element};
-
-use super::succinct_proof::{commit, compute_secondary_diagonal, fold_field, fold_group};
 
 use ark_bn254::{Fr as F, G1Affine};
 use ark_ec::{AffineRepr, CurveGroup};
-use ark_ff::{AdditiveGroup, Field, PrimeField};
+use ark_ff::{AdditiveGroup, Field};
 
-pub fn inner_product(val_1: &Vec<F>, val_2: &Vec<F>) -> F {
-    assert!(val_1.len() == val_2.len());
-    val_1
-        .iter()
-        .zip(val_2.iter())
-        .map(|(a, b)| *a * *b)
-        .fold(F::ZERO, |acc, x| acc + x)
+use crate::{random_ec_points::generate_random_field_element};
+
+
+pub fn log_ipa_proof(
+    a: Vec<F>,
+    b: Vec<F>,
+    g_vec: Vec<G1Affine>,
+    h_vec: Vec<G1Affine>,
+    q: G1Affine
+) -> bool {
+
+    let initial_inner_product = compute_inner_product(&a, &b);
+    println!("Initial inner product: {:?}", initial_inner_product);
+
+    let mut q_vec = hadamard_product(&b, &vec![q.clone(); b.len()]);
+
+    let mut p_com = (commit(&a, &g_vec) + commit(&b, &h_vec) + commit(&a, &q_vec)).into_affine();
+    println!("Initial p_com: {:?}", p_com);
+
+    let mut a_prime = a.clone();
+    let mut b_prime = b.clone();
+    
+    let mut g_prime = g_vec.clone();
+    let mut h_prime = h_vec.clone();
+
+    while a_prime.len() > 0{
+
+        if a_prime.len() == 1 {
+            let final_inner_product = a_prime[0] * b_prime[0];
+            println!("Final inner product: {:?}", final_inner_product);
+            println!("Inner products match: {}", initial_inner_product == final_inner_product);
+
+            let final_result = commit(&a_prime, &g_prime) + commit(&b_prime, &h_prime) + (q * (a_prime[0] * b_prime[0]));
+            println!("Final comparison:");
+            println!("p_com: {:?}", p_com);
+            println!("final_result: {:?}", final_result.into_affine());
+            return p_com == final_result.into_affine();
+        } else {
+
+            let current_inner_product = compute_inner_product(&a_prime, &b_prime);
+            println!("Current inner product: {:?}", current_inner_product);
+
+            let q_vec = hadamard_product(&b_prime, &vec![q.clone(); b_prime.len()]);
+
+            let (l_com, r_com) = compute_l_r(a_prime.clone(), b_prime.clone(), g_prime.clone(), h_prime.clone(), q_vec.clone());
+
+            let u = generate_random_field_element();
+            println!("Generated u: {:?}", u);
+
+            // Verifier and prover both compute p_prime, g_prime and h_prime
+            let old_p_com = p_com.clone();
+            p_com = (l_com * u * u + p_com + r_com * u.inverse().unwrap() * u.inverse().unwrap()).into_affine();
+            println!("Updated p_com from {:?} to {:?}", old_p_com, p_com);
+
+            g_prime = fold_points(g_prime.clone(), &u.inverse().unwrap());
+            h_prime = fold_points(h_prime.clone(), &u);
+
+            // prover computes a_prime and b_prime
+            let old_len = a_prime.len();
+            a_prime = fold_field(a_prime.clone(), &u);
+            b_prime = fold_field(b_prime.clone(), &u.inverse().unwrap());
+            println!("Vector lengths after folding: {} -> {}", old_len, a_prime.len());
+
+        }
+    }
+    return false
 }
 
-pub fn hadamard_product(field_elements: &Vec<F>, ec_points: &Vec<G1Affine>) -> Vec<G1Affine> {
-    assert!(field_elements.len() == ec_points.len());
 
-    let result: Vec<G1Affine> = field_elements
-        .iter()
-        .zip(ec_points.iter())
-        .map(|(element, ec_point)| (*ec_point * element).into_affine())
-        .collect();
+pub fn compute_l_r(a: Vec<F>, b: Vec<F>, ec_points_g: Vec<G1Affine>, ec_points_h: Vec<G1Affine>, ec_points_q: Vec<G1Affine>) -> (G1Affine, G1Affine) {
+    let (l1_com, r1_com) = compute_secondary_diagonal(a.clone(), ec_points_g.clone());
+    let (l2_com, r2_com) = compute_secondary_diagonal(b.clone(), ec_points_h.clone());
+    let (l3_com, r3_com) = compute_secondary_diagonal(a.clone(), ec_points_q.clone());
+
+    let l_com = (l1_com + l2_com + l3_com).into_affine();
+    let r_com = (r1_com + r2_com + r3_com).into_affine();
+
+    (l_com, r_com)
+
+}
+
+pub fn compute_secondary_diagonal(mut a: Vec<F>, mut ec_points: Vec<G1Affine>) -> (G1Affine, G1Affine) {
+
+    
+    let l: Vec<F> = a.chunks(2).map(|chunk| chunk[0]).collect();
+    let r: Vec<F> = a.chunks(2).map(|chunk| chunk[1]).collect();
+
+    let g1_vec: Vec<G1Affine> = ec_points.chunks(2).map(|chunk| chunk[0]).collect();
+    let g2_vec: Vec<G1Affine> = ec_points.chunks(2).map(|chunk| chunk[1]).collect();
+    
+    let l_com = commit(&l, &g2_vec);
+    let r_com = commit(&r, &g1_vec);
+
+    (l_com, r_com)
+
+}
+
+/// Computes the commitment C which is the sum of each generator g_i multiplied by the corresponding scalar a_i
+pub fn commit(
+    committing_vector: &Vec<F>,
+    g_vec: &Vec<G1Affine>,
+) -> G1Affine {
+    assert!(committing_vector.len() == g_vec.len(), "Invalid vector lengths");
+    let mut result: G1Affine = G1Affine::zero();
+    for (index, point) in committing_vector.iter().enumerate() {
+        // C += g_i * a_i
+        result = (result + g_vec[index] * point).into_affine();
+    }
     result
 }
 
-pub fn prover_step(
-    commitments: [G1Affine; 3],
-    a: &mut Vec<F>,
-    b: &mut Vec<F>,
-    u: &F,
-    g_vec: &mut Vec<G1Affine>,
-    h_vec: &mut Vec<G1Affine>,
-    q: &G1Affine,
-) -> (
-    (G1Affine, G1Affine, G1Affine),
-    (Vec<F>, Vec<F>),
-    (Vec<G1Affine>, Vec<G1Affine>),
-) {
-    let [_a, _l, _r] = commitments;
-
-    let _p =
-        ((_l * (u * u)) + _a + _r * (u.inverse().unwrap() * u.inverse().unwrap())).into_affine();
-
-    let g_prime = fold_group(g_vec, &u.inverse().unwrap());
-
-    let h_prime = fold_group(h_vec, &u);
-
-    let a_prime = fold_field(a, &u);
-    let b_prime = fold_field(b, &u.inverse().unwrap());
-
-    let mut new_vec = [&a_prime[..], &a_prime[..], &b_prime[..]].concat();
-
-    let mut q_n = hadamard_product(&b_prime,  &vec![*q; a_prime.len()]);
-
-    let mut new_ec_points = [&g_prime[..], &q_n[..], &h_prime[..]].concat();
-
-    dbg!(&new_ec_points.len());
-    dbg!(&new_vec.len());
-
-    let (l, r) = compute_secondary_diagonal(&mut new_ec_points, &mut new_vec);
-
-    ((_p, l, r), (a_prime, b_prime), (g_prime, h_prime))
+pub fn hadamard_product(a_vec: &Vec<F>, g_vec: &Vec<G1Affine>) -> Vec<G1Affine> {
+    assert!(a_vec.len() == g_vec.len(), "Invalid vector lengths");
+    a_vec.iter().zip(g_vec.iter()).map(|(&a, &g)| (g * a).into_affine()).collect()
 }
 
-pub fn verifier_step(
-    commitments: [G1Affine; 3],
-    g_vec: &mut Vec<G1Affine>,
-    h_vec: &mut Vec<G1Affine>,
-) -> (G1Affine, F, Vec<G1Affine>, Vec<G1Affine>) {
-    let [_a, _l, _r] = commitments;
-
-    let u = generate_random_field_element();
-
-    let _p =
-        ((_l * (u * u)) + _a + _r * (u.inverse().unwrap() * u.inverse().unwrap())).into_affine();
-
-    let g_prime = fold_group(g_vec, &u.inverse().unwrap());
-
-    let h_prime = fold_group(h_vec, &u);
-
-    (_p, u, g_prime, h_prime)
+pub fn fold_points(g_vec: Vec<G1Affine>, u: &F) -> Vec<G1Affine> {
+    let u_inv = u.inverse().unwrap();
+    g_vec.chunks(2).map(|chunk| (chunk[0] * u + chunk[1] * u_inv).into_affine()).collect()
 }
 
-pub fn log_ipa(
-    a: &mut Vec<F>,
-    b: &mut Vec<F>,
-    g_vec: &mut Vec<G1Affine>,
-    h_vec: &mut Vec<G1Affine>,
-    q: &G1Affine,
-) -> bool {
-    assert!(a.len() == b.len(), "Need to be same length");
-
-    let mut count = 0;
-
-    while a.len() < 2u32.pow(4) as usize {
-        a.push(F::ZERO);
-        b.push(F::ZERO);
-        g_vec.push(G1Affine::zero());
-        h_vec.push(G1Affine::zero());
-    }
-
-    dbg!(&a.len());
-
-    let mut primary_vec = [&a[..], &a[..], &b[..]].concat();
-    let mut q_n = hadamard_product(b,  &vec![*q; a.len()]);
-    let mut ec_points_vector = [&g_vec[..], &q_n[..], &h_vec[..]].concat();
-
-    dbg!(&primary_vec.len());
-    dbg!(&ec_points_vector.len());
-    dbg!(&a.len());
-
-    dbg!(&q_n.len());
-    dbg!(&h_vec.len());
-    dbg!(&g_vec.len());
-
-    let mut _a = commit(&primary_vec, &ec_points_vector).unwrap();
-    let (mut _l, mut _r) = compute_secondary_diagonal(&mut ec_points_vector, &mut primary_vec);
-
-    let commitments = [_a, _l, _r];
-    while a.len() > 0 {
-        if a.len() > 1 {
-            let (_p, u, _, _) = verifier_step(commitments, g_vec, h_vec);
-
-            ((_a, _l, _r), (*a, *b), (*g_vec, *h_vec)) =
-                prover_step(commitments, a, b, &u, g_vec, h_vec, q);
-        } else {
-            return _a == g_vec[0] * a[0] + h_vec[0] * b[0] + *q * inner_product(a, b);
-        }
-
-        count += 1;
-        println!("Ran loop {} times", count);
-    }
-
-    return false;
+pub fn fold_field(a_vec: Vec<F>, u: &F) -> Vec<F> {
+    let u_inv = u.inverse().unwrap();
+    a_vec.chunks(2).map(|chunk| chunk[0] * u + chunk[1] * u_inv).collect()
 }
 
-#[test]
-fn test_log_ipa() {
-    let mut a = vec![F::from(2), F::from(3), F::from(4), F::from(12)];
-    let mut b = vec![F::from(5), F::from(4), F::from(9), F::from(18)];
-
-    let mut g_vec = generate_n_random_points("hello".to_string(), 4);
-    let mut h_vec = generate_n_random_points("bullet".to_string(), 4);
-    let q = generate_n_random_points("proof".to_string(), 1)[0];
-
-    let verification = log_ipa(&mut a, &mut b, &mut g_vec, &mut h_vec, &q);
-
-    assert!(verification)
+fn compute_inner_product(a: &Vec<F>, b: &Vec<F>) -> F {
+    a.iter().zip(b.iter()).map(|(x, y)| *x * *y).sum()
 }

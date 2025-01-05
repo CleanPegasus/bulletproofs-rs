@@ -62,8 +62,8 @@ mod test {
         let committments = commit_polynomial(&poly, &gammas, &g, &b).unwrap();
 
         let mut rng = rand::thread_rng();
-        let random_number: u32 = rng.gen_range(1..100000);
-        let u = F::from(random_number);
+        // let random_number: u32 = ;
+        let u = F::rand(&mut rng);
         let proof = generate_proof(&gammas, &u);
 
         let f_u = poly.evaluate(&u);
